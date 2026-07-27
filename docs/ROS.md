@@ -35,3 +35,5 @@ Who are publishing and subscribing the topic? rostopic info /topic/name
 Where are the subscribers publishing? rosnode info /node/name
 
 
+hi
+
