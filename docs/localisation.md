@@ -43,3 +43,5 @@ the main source is the topic with the sensor name  * /novatel/oem7/bestpos [nova
  * /novatel/oem7/inspva [novatel_oem7_msgs/INSPVA]
 
 rostopic hz
+
+Lesson2Finished
