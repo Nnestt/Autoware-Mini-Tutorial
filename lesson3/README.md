@@ -221,3 +221,5 @@ Replace the constant `linear_velocity = 0.0` in the `else` branch with this inte
 * Place the ego vehicle at the start of the path (use `2D Pose Estimate`), and it should start following the path with the speed reflecting the moment of recording.
 * If everything works without errors, clean the code (remove unnecessary debugging printouts) and commit to your repo.
 * Try different lookahead distances by changing `lookahead_distance` in [`shared/config/control.yaml`](../shared/config/control.yaml). Is the behavior different? What is different and why? (These questions are for your own understanding.)
+
+done
