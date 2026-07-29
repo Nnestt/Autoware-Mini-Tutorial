@@ -44,4 +44,4 @@ the main source is the topic with the sensor name  * /novatel/oem7/bestpos [nova
 
 rostopic hz
 
-Lesson2Finished
+Lesson2Finished 

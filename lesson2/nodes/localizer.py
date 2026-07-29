@@ -23,9 +23,6 @@ class Localizer:
         self.crs_utm = CRS.from_epsg(25835)
         self.utm_projection = Proj(self.crs_utm)
 
-        # TODO 2: Create a coordinate transformer using self.crs_wgs84 and self.crs_utm.
-        #         Use Transformer.from_crs(). Then transform the origin point (utm_origin_lat,
-        #         utm_origin_lon) and store results as self.origin_x and self.origin_y.
         self.transformer = Transformer.from_crs(self.crs_wgs84, self.crs_utm)
         self.origin_x, self.origin_y = self.transformer.transform(utm_origin_lat, utm_origin_lon)
 
@@ -42,20 +39,21 @@ class Localizer:
         utm_x, utm_y = self.transformer.transform(msg.latitude, msg.longitude)
         x_transform = utm_x - self.origin_x
         y_transform = utm_y - self.origin_y
+        z_transform = msg.height - self.undulation
 
         #Calculate orientation as a quaternion.
         azimuth_correction = self.utm_projection.get_factors(msg.longitude, msg.latitude).meridian_convergence
         yaw = self.convert_azimuth_to_yaw((msg.azimuth - azimuth_correction) * math.pi / 180)
-        x, y, z, w = quaternion_from_euler(0, 0, yaw)
-        orientation = Quaternion(x, y, z, w)
+        x, y, z_quat, w = quaternion_from_euler(0, 0, yaw)
+        orientation = Quaternion(x, y, z_quat, w)
 
         #Create and publish a PoseStamped message on self.current_pose_pub:
         current_pose_msg = PoseStamped()
         current_pose_msg.header.stamp = msg.header.stamp
         current_pose_msg.header.frame_id = "map"
         current_pose_msg.pose.position.x = x_transform
-        current_pose_msg.pose.position.y = y_transform   
-        current_pose_msg.pose.position.z = msg.height - self.undulation
+        current_pose_msg.pose.position.y = y_transform
+        current_pose_msg.pose.position.z = z_transform
         current_pose_msg.pose.orientation = orientation
         self.current_pose_pub.publish(current_pose_msg)
 
@@ -75,8 +73,8 @@ class Localizer:
         t.header.frame_id = "map"
         t.child_frame_id = "base_link"
         t.transform.translation.x = x_transform
-        t.transform.translation.y = y_transform  
-        t.transform.translation.z = msg.height - self.undulation
+        t.transform.translation.y = y_transform
+        t.transform.translation.z = z_transform
         t.transform.rotation = orientation
 
         # publish transform

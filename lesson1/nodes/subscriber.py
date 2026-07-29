@@ -13,11 +13,11 @@ class Subscriber:
         # Subscribers
         rospy.Subscriber('/message', String, self.message_callback)
 
-    def message_callback(self, msg):# callbacks are class methods, they can access shared state through sel
+    def message_callback(self, msg):
         print(msg.data)
 
     def run(self):
-        rospy.spin()# keeps the node runnings
+        rospy.spin()
 
 if __name__ == '__main__':
     rospy.init_node('subscriber')
