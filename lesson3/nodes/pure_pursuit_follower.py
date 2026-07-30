@@ -70,7 +70,7 @@ class PurePursuitFollower:
     def current_pose_callback(self, msg):
         if self.path_linestring is None:
             # TODO 1: Print out the current pose coordinates to verify data flow.
-            print(d_ego_from_path_start)
+            # print(msg.pose.position.x, msg.pose.position.y)
 
             steering_angle = 0.0
             linear_velocity = 0.0
