@@ -175,3 +175,5 @@ Three approaches to consider:
 * Test your solution by placing goals at various positions along a lanelet (beginning, middle, end).
 * Verify that the path end and goal point are aligned — the car should stop near where you clicked.
 * Clean the code (remove debugging printouts) and commit to your repo.
+
+finished
