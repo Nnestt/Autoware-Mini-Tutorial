@@ -61,6 +61,8 @@ class ClusterDetector:
         for i in range(int(max(points[:, 3]) + 1)):
             # Find all points with a correct label
             points3d = points[points[:, 3] == i]
+            if len(points3d) < self.min_cluster_size: #prevents clusters below requirements
+                continue
 
             centroid = np.mean(points3d[:, :3], axis=0)
 

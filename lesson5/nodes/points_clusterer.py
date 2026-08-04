@@ -30,6 +30,8 @@ class PointsClusterer:
 
         data = numpify(msg)
         points = structured_to_unstructured(data[['x', 'y', 'z']], dtype=np.float32)
+        if len(points) == 0: #empty point cloud check
+            return
         labels = self.clusterer.fit_predict(points)
 
 
