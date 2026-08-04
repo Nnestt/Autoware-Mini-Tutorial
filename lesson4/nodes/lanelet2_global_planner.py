@@ -2,6 +2,7 @@
 
 import numpy as np
 import rospy
+import shapely
 from threading import Lock
 
 from geometry_msgs.msg import PoseStamped
@@ -35,7 +36,8 @@ class GlobalPlanner:
         else:
             raise RuntimeError('Only "utm" is supported for lanelet2 map loading')
         self.lanelet2_map = load(lanelet2_map_path, projector)
-#        # Create routing graph
+
+        # Create routing graph
         traffic_rules = lanelet2.traffic_rules.create(lanelet2.traffic_rules.Locations.Germany,
                                 lanelet2.traffic_rules.Participants.VehicleTaxi)
         self.graph = lanelet2.routing.RoutingGraph(self.lanelet2_map, traffic_rules)
@@ -59,7 +61,7 @@ class GlobalPlanner:
         if self.current_location is None:
             return
 
-        rospy.loginfo("%s - goal position (%f, %f, %f) in %s frame", rospy.get_name(),
+        rospy.loginfo("%s - Goal position (%f, %f, %f) in %s frame", rospy.get_name(),
             msg.pose.position.x, msg.pose.position.y, msg.pose.position.z,
             msg.header.frame_id)
 
@@ -81,8 +83,8 @@ class GlobalPlanner:
 
         # Get path without lane changes
         path_no_lane_change = path.getRemainingLane(start_lanelet)
-        print(path_no_lane_change)
-        #CONVERT THE LANELET SEQUENCE TO A LIST OF WAYPOINTS AND PUBLISH IT
+
+        # Convert the lanelet sequence to a list of waypoints and publish it
         waypoints = self.convert_laneletseq_to_waypoints_list(path_no_lane_change)
         self.publish_lane_from_waypoints_list(waypoints)
 
@@ -93,26 +95,27 @@ class GlobalPlanner:
 
         if self.goal_point is None:
             return
-#CHECK IF THE VEHICLE IS CLOSE ENOUGH TO THE GOAL POINT AND PUBLISH AN EMPTY PATH IF IT IS
+
+        # Check if the vehicle is close enough to the goal point
         distance_to_goal = np.sqrt((self.current_location.x - self.goal_point.x) ** 2 +
                                     (self.current_location.y - self.goal_point.y) ** 2)
         if distance_to_goal <= self.distance_to_goal_limit:
-            # Publish an empty path
-            empty_path = Path()
-            empty_path.header.frame_id = self.output_frame
-            empty_path.header.stamp = rospy.Time.now()
-            self.global_path_pub.publish(empty_path)
-
-            rospy.loginfo("%s - Goal reached at (%f, %f)", rospy.get_name(),
-                            self.goal_point.x, self.goal_point.y)
+            goal_x = self.goal_point.x
+            goal_y = self.goal_point.y
+            self.publish_lane_from_waypoints_list([])
             with self.lock:
                 self.goal_point = None
+            rospy.loginfo("%s - Goal reached at (%f, %f)", rospy.get_name(), goal_x, goal_y)
 
 
     def convert_laneletseq_to_waypoints_list(self, laneletseq):
         waypoints = []
+        last_lanelet_waypoint_start = 0
 
         for j, lanelet in enumerate(laneletseq):
+            if j == len(laneletseq) - 1:
+                last_lanelet_waypoint_start = len(waypoints)
+
             # Get speed from lanelet attribute or use global speed limit. The speed limit is in km/h, convert to m/s for the Waypoint message.
             if 'speed_ref' in lanelet.attributes:
                 speed = min(float(lanelet.attributes['speed_ref']) / 3.6, self.speed_limit / 3.6)
@@ -131,14 +134,26 @@ class GlobalPlanner:
                 waypoint.speed = speed
                 waypoints.append(waypoint)
 
-        #FIND THE WAYPOINT CLOSEST TO THE GOAL POINT AND SET ITS POSITION TO THE GOAL POINT TO MATCH
-        #TO SYNC GOAL POINT
         if waypoints:
-            closest_waypoint = min(waypoints, key=lambda wp: np.sqrt((wp.position.x - self.goal_point.x) ** 2 +
-                                                                      (wp.position.y - self.goal_point.y) ** 2))
-            closest_waypoint.position.x = self.goal_point.x
-            closest_waypoint.position.y = self.goal_point.y
-            closest_waypoint.position.z = 0.0  # Assuming ground level for the goal point
+            last_lanelet = laneletseq[-1]
+            last_lanelet_line = shapely.LineString([(point.x, point.y, point.z)
+                                                    for point in last_lanelet.centerline])
+            clicked_goal = shapely.Point(self.goal_point.x, self.goal_point.y)
+            projected_goal = last_lanelet_line.interpolate(last_lanelet_line.project(clicked_goal))
+            projected_x, projected_y, projected_z = projected_goal.coords[0]
+
+            closest_waypoint_index = min(
+                range(last_lanelet_waypoint_start, len(waypoints)),
+                key=lambda i: np.sqrt((waypoints[i].position.x - projected_x) ** 2 +
+                                      (waypoints[i].position.y - projected_y) ** 2))
+            closest_waypoint = waypoints[closest_waypoint_index]
+            closest_waypoint.position.x = projected_x
+            closest_waypoint.position.y = projected_y
+            closest_waypoint.position.z = projected_z
+            waypoints = waypoints[:closest_waypoint_index + 1]
+
+            with self.lock:
+                self.goal_point = BasicPoint2d(projected_x, projected_y)
 
         return waypoints
 
