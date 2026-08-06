@@ -179,7 +179,12 @@ class YoloTrafficLightDetector:
             # extract the transform between transform_to_frame and transform_from_frame
             #         at image_time_stamp using self.tf_buffer, then calculate the map ROIs:
             try:
-                transform = self.tf_buffer.lookup_transform(transform_to_frame, transform_from_frame, image_time_stamp)
+                transform = self.tf_buffer.lookup_transform(
+                    transform_to_frame,
+                    transform_from_frame,
+                    image_time_stamp,
+                    rospy.Duration(self.transform_timeout) #add transform timeout 
+                )
             except (tf2_ros.TransformException, rospy.ROSTimeMovedBackwardsException) as e:
                 rospy.logwarn("%s - %s", rospy.get_name(), e)
                 return
