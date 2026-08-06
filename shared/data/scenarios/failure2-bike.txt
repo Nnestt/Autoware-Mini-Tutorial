@@ -1,0 +1,2 @@
+Scenario finished (stopped by user)
+(No ego vehicle)

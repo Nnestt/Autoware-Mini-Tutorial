@@ -65,11 +65,26 @@ Your framework from the previous lessons is a simplified one. Remember all limit
 4. Fill in the three descriptions below: what happens in the scenario, how your framework fails, and what change to the framework would fix it. Add screenshots if needed.
 5. Commit and push everything, and be ready to demonstrate your failure cases at the practice session
 
-##### Failure case 1
-...
+##### Failure case 1 - Pedestrian emerging from a blind spot
 
-##### Failure case 2
-...
+In `failure1-pedestrian.json`, a pedestrian starts crossing from behind an obstruction as the ego vehicle approaches at 40 km/h. The pedestrian only becomes visible when the vehicle is already close, and the vehicle continues along its planned path and knocks the pedestrian over. The scenario result records one collision and a failed run.
 
-##### Failure case 3
-...
+The framework reacts only to objects that are currently detected and does not reason about areas hidden by parked vehicles or other obstacles. Consequently, it keeps the normal target speed while approaching the blind spot and has insufficient stopping distance when the pedestrian appears.
+
+This could be fixed by adding occlusion-aware speed planning. The planner should identify hidden areas beside the road from the map and sensor data, assume that a vulnerable road user may emerge from them, and reduce the target speed until the area is visible. This would give the emergency braking system enough time to stop for the pedestrian.
+
+##### Failure case 2 - Speeding motorbike in darkness
+
+In `failure2-bike.json`, the scene is configured with the sun below the horizon and dense fog, producing extremely poor visibility. A Yamaha motorbike approaches at high speed and enters the ego vehicle's path. The framework detects or reacts to it too late, so the ego vehicle collides with the motorbike. A careful human driver would compensate for the darkness and restricted visibility by slowing down and watching for approaching headlights.
+
+The perception and motion-planning pipeline does not sufficiently adapt to low visibility. A small, fast motorbike is difficult to detect at night, and a planner that considers mainly the object's current position rather than its closing speed underestimates the collision risk.
+
+This could be fixed with low-light, multi-sensor perception and a visibility-aware safety policy. Fusing camera detections with lidar or radar would make the motorbike easier to track in darkness, while a time-to-collision calculation would trigger braking for a rapidly approaching object. The planner should also lower the maximum speed whenever sensor visibility or detection confidence is poor.
+
+##### Failure case 3 - T-bone collision at an intersection
+
+In `failure3-tbone.json`, an oncoming vehicle crosses the ego vehicle's route at an intersection. The ego vehicle proceeds at a target speed of 40 km/h instead of yielding, and the vehicles collide side-on. The result records one collision and terminates the route after only 1.11% completion.
+
+The framework's obstacle handling is focused on objects already occupying the ego lane. It does not reliably predict that a vehicle approaching from another direction will enter the same intersection at the same time, so it does not create a stop point before the conflict area.
+
+This could be fixed by adding intersection-aware trajectory prediction and right-of-way handling. The planner should project the paths of vehicles in nearby lanes, calculate whether their arrival times overlap in the intersection conflict zone, and stop before the junction when the ego vehicle must yield. It should proceed only after the conflict zone is predicted to remain clear.
