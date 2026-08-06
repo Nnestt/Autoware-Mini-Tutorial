@@ -172,7 +172,7 @@ class SimpleCollisionChecker:
                         collision_point = np.array([(
                             x,                                      # collision x
                             y,                                      # collision y
-                            0.0,                                    # collision z
+                            hull_points[0, 2],                      # collision z #changed from 0.0 to hull_points[0, 2] to use the z coordinate of the convex hull
                             obj.velocity.x,                         # object velocity x
                             obj.velocity.y,                         # object velocity y
                             obj.velocity.z,                         # object velocity z
