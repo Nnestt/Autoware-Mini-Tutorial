@@ -75,7 +75,7 @@ This could be fixed by adding occlusion-aware speed planning. The planner should
 
 ##### Failure case 2 - Speeding motorbike in darkness
 
-In `failure2-bike.json`, the scene is configured with the sun below the horizon and dense fog, producing extremely poor visibility. A Yamaha motorbike approaches at high speed and enters the ego vehicle's path. The framework detects or reacts to it too late, so the ego vehicle collides with the motorbike. A careful human driver would compensate for the darkness and restricted visibility by slowing down and watching for approaching headlights.
+In `failure2-bike_test.json`, the scene is configured to be at night, producing extremely poor visibility. A Yamaha motorbike approaches at high speed and enters the ego vehicle's path. The framework is supposed to give the motorbike the right of way, but it still decides to make the turn. Consequently, the framework detects or reacts to it too late, so the ego vehicle collides with the motorbike. A careful human driver would compensate for the darkness and restricted visibility by slowing down and watching for approaching headlights and waiting for the motorbike to pass first.
 
 The perception and motion-planning pipeline does not sufficiently adapt to low visibility. A small, fast motorbike is difficult to detect at night, and a planner that considers mainly the object's current position rather than its closing speed underestimates the collision risk.
 
